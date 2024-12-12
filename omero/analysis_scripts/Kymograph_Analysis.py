@@ -1,32 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# -----------------------------------------------------------------------------
+#   Copyright (C) 2006-2017 University of Dundee. All rights reserved.
+
+
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# ------------------------------------------------------------------------------
+
 """
------------------------------------------------------------------------------
-  Copyright (C) 2006-2017 University of Dundee. All rights reserved.
-
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License along
-  with this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-------------------------------------------------------------------------------
-
 This script is the second Kymograph script, for analyzing lines drawn on
 kymograph images that have been created by the 'Kymograph.py' Script.
-
-
-@author Will Moore
-<a href="mailto:will@lifesci.dundee.ac.uk">will@lifesci.dundee.ac.uk</a>
-@since 3.0
 """
+# @author Will Moore
+# <a href="mailto:will@lifesci.dundee.ac.uk">will@lifesci.dundee.ac.uk</a>
+# @version 5.5.0
+# @since 3.0
 
 from omero.gateway import BlitzGateway
 import omero
@@ -85,7 +86,7 @@ def process_images(conn, script_params):
             for s in roi.copyShapes():
                 if s is None:
                     continue    # seems possible in some situations
-                if type(s) == omero.model.LineI:
+                if isinstance(s, omero.model.LineI):
                     table_data += "\nLine ID: %s" % s.getId().getValue()
                     x1 = s.getX1().getValue()
                     x2 = s.getX2().getValue()
@@ -102,7 +103,7 @@ def process_images(conn, script_params):
                         [str(x) for x in (y1, x1, y2, x2, dy, dx, dx_per_y,
                                           speed)])
 
-                elif type(s) == omero.model.PolylineI:
+                elif isinstance(s, omero.model.PolylineI):
                     table_data += "\nPolyline ID: %s" % s.getId().getValue()
                     v = s.getPoints().getValue()
                     points = roi_utils.points_string_to_xy_list(v)

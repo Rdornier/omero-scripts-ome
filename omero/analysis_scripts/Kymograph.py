@@ -40,7 +40,8 @@ import omero.util.script_utils as script_utils
 import omero.util.roi_handling_utils as roi_utils
 from omero.rtypes import rlong, rstring, robject, unwrap
 import omero.scripts as scripts
-from numpy import zeros, hstack, vstack, asarray, math
+from numpy import zeros, hstack, vstack, asarray
+import math
 import logging
 from PIL import Image
 from io import BytesIO
@@ -58,12 +59,12 @@ def get_line_data(image, x1, y1, x2, y2, line_w=2, the_z=0, the_c=0, the_t=0):
     Uses PIL to handle rotating and interpolating the data. Converts to numpy
     to PIL and back (may change dtype.)
 
-    @param pixels:          PixelsWrapper object
-    @param x1, y1, x2, y2:  Coordinates of line
-    @param line_w:          Width of the line we want
-    @param the_z:           Z index within pixels
-    @param the_c:           Channel index
-    @param the_t:           Time index
+    :param pixels:          PixelsWrapper object
+    :param x1, y1, x2, y2:  Coordinates of line
+    :param line_w:          Width of the line we want
+    :param the_z:           Z index within pixels
+    :param the_c:           Channel index
+    :param the_t:           Time index
     """
     size_x = image.getSizeX()
     size_y = image.getSizeY()
@@ -143,7 +144,7 @@ def polyline_kymograph(conn, script_params, image, polylines, line_width,
     """
     Create a new kymograph Image from one or more polylines.
 
-    @param polylines:       map of theT: {theZ:theZ, points: list of (x,y)}
+    :param polylines:       map of theT: {theZ:theZ, points: list of (x,y)}
     """
     size_c = image.getSizeC()
     size_t = image.getSizeT()
@@ -175,9 +176,9 @@ def polyline_kymograph(conn, script_params, image, polylines, line_width,
                 line_data = []
                 points = shape['points']
                 the_z = shape['theZ']
-                for l in range(len(points)-1):
-                    x1, y1 = points[l]
-                    x2, y2 = points[l+1]
+                for point in range(len(points)-1):
+                    x1, y1 = points[point]
+                    x2, y2 = points[point+1]
                     ld = get_line_data(image, x1, y1, x2, y2,
                                        line_width, the_z, the_c, the_t)
                     line_data.append(ld)
@@ -334,7 +335,7 @@ def process_images(conn, script_params):
                     z = the_z
                 # TODO: Add some filter of shapes. E.g. text? / 'lines' only
                 # etc.
-                if type(s) == omero.model.LineI:
+                if isinstance(s, omero.model.LineI):
                     x1 = s.getX1().getValue()
                     x2 = s.getX2().getValue()
                     y1 = s.getY1().getValue()
@@ -342,7 +343,7 @@ def process_images(conn, script_params):
                     lines[t] = {'theZ': z, 'x1': x1, 'y1': y1, 'x2': x2,
                                 'y2': y2}
 
-                elif type(s) == omero.model.PolylineI:
+                elif isinstance(s, omero.model.PolylineI):
                     v = s.getPoints().getValue()
                     points = roi_utils.points_string_to_xy_list(v)
                     polylines[t] = {'theZ': z, 'points': points}

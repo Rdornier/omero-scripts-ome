@@ -1,33 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# -----------------------------------------------------------------------------
+#   Copyright (C) 2006-2017 University of Dundee. All rights reserved.
+
+
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# ------------------------------------------------------------------------------
+
 """
-
------------------------------------------------------------------------------
-  Copyright (C) 2006-2017 University of Dundee. All rights reserved.
-
-
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License along
-  with this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-------------------------------------------------------------------------------
-
 This script processes Images which have Line or PolyLine ROIs,
 saving the intensity of chosen channels to Excel (csv) files.
-
-@author Will Moore
-<a href="mailto:will@lifesci.dundee.ac.uk">will@lifesci.dundee.ac.uk</a>
-@since 3.0
 """
+
+# @author Will Moore
+# <a href="mailto:will@lifesci.dundee.ac.uk">will@lifesci.dundee.ac.uk</a>
+# @since 3.0
 
 from omero.gateway import BlitzGateway
 import omero
@@ -45,7 +45,7 @@ def process_polylines(conn, script_params, image, polylines, line_width, fout):
     """
     Output data from one or more polylines on an image. Attach csv to image.
 
-    @param polylines list of theT:T, theZ:Z, points: list of (x,y)}
+    :param polylines: list of theT:T, theZ:Z, points: list of (x,y)}
     """
     pixels = image.getPrimaryPixels()
     the_cs = script_params['Channels']
@@ -57,9 +57,9 @@ def process_polylines(conn, script_params, image, polylines, line_width, fout):
         points = pl['points']
         for the_c in the_cs:
             ldata = []
-            for l in range(len(points)-1):
-                x1, y1 = points[l]
-                x2, y2 = points[l+1]
+            for point in range(len(points)-1):
+                x1, y1 = points[point]
+                x2, y2 = points[point+1]
                 if round(x1 - x2) == 0 and round(y1 - y2) == 0:
                     continue
                 ld = roi_utils.get_line_data(
@@ -103,17 +103,18 @@ def process_lines(conn, script_params, image, lines, line_width, fout):
     pixels = image.getPrimaryPixels()
     the_cs = script_params['Channels']
 
-    for l in lines:
-        the_t = l['theT']
-        the_z = l['theZ']
-        roi_id = l['id']
-        if round(l['x1'] - l['x2']) == 0 and round(l['y1'] - l['y2']) == 0:
+    for line in lines:
+        the_t = line['theT']
+        the_z = line['theZ']
+        roi_id = line['id']
+        if round(line['x1'] - line['x2']) == 0 and round(line['y1'] - line['y2']) == 0:  # noqa
             continue
         for the_c in the_cs:
             line_data = []
-            line_data = roi_utils.get_line_data(pixels, l['x1'], l['y1'],
-                                                l['x2'], l['y2'], line_width,
-                                                the_z, the_c, the_t)
+            line_data = roi_utils.get_line_data(pixels, line['x1'], line['y1'],
+                                                line['x2'], line['y2'],
+                                                line_width, the_z, the_c,
+                                                the_t)
 
             if script_params['Sum_or_Average'] == 'Sum':
                 output_data = line_data.sum(axis=0)
@@ -192,7 +193,7 @@ def process_images(conn, script_params):
                     z = the_z
                 # TODO: Add some filter of shapes e.g. text? / 'lines' only
                 # etc.
-                if type(s) == omero.model.LineI:
+                if isinstance(s, omero.model.LineI):
                     x1 = s.getX1().getValue()
                     x2 = s.getX2().getValue()
                     y1 = s.getY1().getValue()
@@ -200,7 +201,7 @@ def process_images(conn, script_params):
                     lines.append({'id': roi_id, 'theT': t, 'theZ': z,
                                   'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2})
 
-                elif type(s) == omero.model.PolylineI:
+                elif isinstance(s, omero.model.PolylineI):
                     v = s.getPoints().getValue()
                     points = roi_utils.points_string_to_xy_list(v)
                     polylines.append({'id': roi_id, 'theT': t, 'theZ': z,

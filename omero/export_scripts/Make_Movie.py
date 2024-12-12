@@ -1,59 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# -----------------------------------------------------------------------------
+#   Copyright (C) 2006-2021 University of Dundee. All rights reserved.
+
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# ------------------------------------------------------------------------------
+
 """
------------------------------------------------------------------------------
-  Copyright (C) 2006-2015 University of Dundee. All rights reserved.
-
-
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License along
-  with this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-------------------------------------------------------------------------------
-
 Make movie takes a number of parameters and creates an movie from the
 image with imageId supplied. This movie is uploaded back to the server and
 attached to the original Image.
-
-params:
-    imageId: this id of the image to create the movie from
-    output: The name of the output file, sans the extension
-    zStart: The starting z-section to create the movie from
-    zEnd:     The final z-section
-    tStart:    The starting timepoint to create the movie
-    tEnd:    The final timepoint.
-    channels: The list of channels to use in the movie(index, from 0)
-    splitView: should we show the split view in the movie(not available yet)
-    showTime: Show the average time of the aquisition of the channels in the
-    frame.
-    showPlaneInfo: Show the time and z-section of the current frame.
-    fps:    The number of frames per second of the movie
-    scalebar: The scale bar size in microns, if <=0 will not show scale bar.
-    format:    The format of the movie to be created currently supports
-    'video/mpeg', 'video/quicktime'
-    overlayColour: The color of the overlays, scale bar, time, as int(RGB)
-    fileAnnotation: The fileAnnotation id of the uploaded movie.
-
-@author  Jean-Marie Burel &nbsp;&nbsp;&nbsp;&nbsp;
-<a href="mailto:j.burel@dundee.ac.uk">j.burel@dundee.ac.uk</a>
-@author Donald MacDonald &nbsp;&nbsp;&nbsp;&nbsp;
-<a href="mailto:donald@lifesci.dundee.ac.uk">donald@lifesci.dundee.ac.uk</a>
-@version 3.0
-<small>
-(<b>Internal version:</b> $Revision: $Date: $)
-</small>
-@since 3.0-Beta4.1
-
 """
+# @author  Jean-Marie Burel &nbsp;&nbsp;&nbsp;&nbsp;
+# <a href="mailto:j.burel@dundee.ac.uk">j.burel@dundee.ac.uk</a>
+# @author Donald MacDonald &nbsp;&nbsp;&nbsp;&nbsp;
+# <a href="mailto:donald@lifesci.dundee.ac.uk">donald@lifesci.dundee.ac.uk</a>
+# @version 3.0
+# @since 3.0-Beta4.1
 
 import omero.scripts as scripts
 import omero.util.script_utils as script_utils
@@ -72,16 +48,8 @@ from omero.constants.namespaces import NSCREATED
 from omero.constants.metadata import NSMOVIE
 
 from io import BytesIO
-try:
-    from types import StringTypes
-except ImportError:
-    StringTypes = str
 
-try:
-    from PIL import Image, ImageDraw  # see ticket:2597
-except ImportError:
-    import Image
-    import ImageDraw  # see ticket:2597
+from PIL import Image, ImageDraw
 
 COLOURS = script_utils.COLOURS
 COLOURS.update(script_utils.EXTRA_COLOURS)    # name:(rgba) map
@@ -291,7 +259,7 @@ def valid_channels(set, size_c):
     if (len(set) == 0):
         return False
     for val in set:
-        if isinstance(val, StringTypes):
+        if isinstance(val, str):
             val = int(val.split('|')[0].split('$')[0])
         if (val < 0 or val > size_c):
             return False
@@ -379,7 +347,7 @@ def reshape_to_fit(image, size_x, size_y, bg=(0, 0, 0)):
     # scale
     ratio = min(float(size_x) / image_w, float(size_y) / image_h)
     image = image.resize(map(lambda x: int(x*ratio), image.size),
-                         Image.ANTIALIAS)
+                         Image.LANCZOS)
     # paste
     bg = Image.new("RGBA", (size_x, size_y), (0, 0, 0))     # black bg
     ovlpos = (size_x-image.size[0]) / 2, (size_y-image.size[1]) / 2
@@ -393,11 +361,11 @@ def write_intro_end_slides(conn, command_args, orig_file_id, duration, size_x,
     Uses an original file (jpeg or png) to add frames to the movie.
     Scales and pads to fit size_x, size_y.
 
-    @param orig_file_id:    Original File (png or jpeg) ID
-    @param duration:        Duration of intro / end (secs)
-    @param size_x:          Width of the exported movie
-    @param size_y:          Height of the exported movie
-    @return:                List of file names to add to mencoder list
+    :param orig_file_id:    Original File (png or jpeg) ID
+    :param duration:        Duration of intro / end (secs)
+    :param size_x:          Width of the exported movie
+    :param size_y:          Height of the exported movie
+    :return:                List of file names to add to mencoder list
     """
 
     slide_filenames = []
@@ -430,7 +398,7 @@ def prepare_watermark(conn, command_args, size_x, size_y):
     Read Original File (png or jpeg) to use as watermark,
     scale if needed to fit movie (size_x, size_y) and return
 
-    @return:        PIL Image to use as watermark.
+    :return: PIL Image to use as watermark.
     """
 
     wm_orig_file = command_args["Watermark"]
@@ -463,7 +431,7 @@ def write_movie(command_args, conn):
     """
     Makes the movie.
 
-    @return        Returns the file annotation
+    :return: Returns the file annotation
     """
     log("Movie created by OMERO")
     log("")
@@ -510,8 +478,8 @@ def write_movie(command_args, conn):
         c_windows = []
         c_colours = []
         for c in command_args["ChannelsExtended"]:
-            m = re.match('^(?P<i>\d+)(\|(?P<ws>\d+)' +
-                         '\:(?P<we>\d+))?(\$(?P<c>.+))?$', c)
+            m = re.match('^(?P<i>\\d+)(\\|(?P<ws>\\d+)' +
+                         '\\:(?P<we>\\d+))?(\\$(?P<c>.+))?$', c)
             if m is not None:
                 c_range.append(int(m.group('i'))-1)
                 c_windows.append([float(m.group('ws')), float(m.group('we'))])
@@ -618,7 +586,7 @@ def write_movie(command_args, conn):
         movie_name = "%s.%s" % (movie_name, ext)
 
     # spaces etc in file name cause problems
-    movie_name = re.sub("[$&\;|\(\)<>' ]", "", movie_name)
+    movie_name = re.sub("[$&\\;|\\(\\)<>' ]", "", movie_name)
     frames_per_sec = 2
     if "FPS" in command_args:
         frames_per_sec = command_args["FPS"]

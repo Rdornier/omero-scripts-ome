@@ -1,37 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+#   Copyright (C) 2006-2021 University of Dundee. All rights reserved.
+#
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# ------------------------------------------------------------------------------
+
 """
------------------------------------------------------------------------------
-  Copyright (C) 2006-2017 University of Dundee. All rights reserved.
-
-
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License along
-  with this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-------------------------------------------------------------------------------
-
 This script takes a number of images and displays regions defined by their
 ROIs as zoomed panels beside the images.
-
-@author  William Moore &nbsp;&nbsp;&nbsp;&nbsp;
-<a href="mailto:will@lifesci.dundee.ac.uk">will@lifesci.dundee.ac.uk</a>
-@author  Jean-Marie Burel &nbsp;&nbsp;&nbsp;&nbsp;
-<a href="mailto:j.burel@dundee.ac.uk">j.burel@dundee.ac.uk</a>
-@author Donald MacDonald &nbsp;&nbsp;&nbsp;&nbsp;
-<a href="mailto:donald@lifesci.dundee.ac.uk">donald@lifesci.dundee.ac.uk</a>
-@since 3.0
-
 """
+# @author  William Moore &nbsp;&nbsp;&nbsp;&nbsp;
+# <a href="mailto:will@lifesci.dundee.ac.uk">will@lifesci.dundee.ac.uk</a>
+# @author  Jean-Marie Burel &nbsp;&nbsp;&nbsp;&nbsp;
+# <a href="mailto:j.burel@dundee.ac.uk">j.burel@dundee.ac.uk</a>
+# @author Donald MacDonald &nbsp;&nbsp;&nbsp;&nbsp;
+# <a href="mailto:donald@lifesci.dundee.ac.uk">donald@lifesci.dundee.ac.uk</a>
+# @since 3.0
 
 import omero
 import omero.scripts as scripts
@@ -46,11 +44,7 @@ from omero.constants.projection import ProjectionType
 import io
 from datetime import date
 
-try:
-    from PIL import Image, ImageDraw  # see ticket:2597
-except ImportError:
-    import Image
-    import ImageDraw  # see ticket:2597
+from PIL import Image, ImageDraw
 
 
 COLOURS = script_utils.COLOURS    # name:(rgba) map
@@ -75,7 +69,7 @@ def get_roi_split_view(re, pixels, z_start, z_end, split_indexes,
     This takes a ROI rectangle from an image and makes a split view canvas of
     the region in the ROI, zoomed by a defined factor.
 
-    @param    re        The OMERO rendering engine.
+    :param re:        The OMERO rendering engine.
     """
 
     if algorithm is None:    # omero::constants::projection::ProjectionType
@@ -182,7 +176,7 @@ def get_roi_split_view(re, pixels, z_start, z_end, split_indexes,
                 # hoping that when we zoom, don't zoom fullImage
             if roi_zoom != 1:
                 new_size = (int(roi_width*roi_zoom), int(roi_height*roi_zoom))
-                roi_image = roi_image.resize(new_size, Image.ANTIALIAS)
+                roi_image = roi_image.resize(new_size, Image.LANCZOS)
             rendered_images.append(roi_image)
             panel_width = roi_image.size[0]
             re.setActive(index, False)  # turn the channel off again!
@@ -215,7 +209,7 @@ def get_roi_split_view(re, pixels, z_start, z_end, split_indexes,
 
     if roi_zoom != 1:
         new_size = (int(roi_width*roi_zoom), int(roi_height*roi_zoom))
-        roi_merged_image = roi_merged_image.resize(new_size, Image.ANTIALIAS)
+        roi_merged_image = roi_merged_image.resize(new_size, Image.LANCZOS)
 
     if channel_mismatch:
         log(" WARNING channel mismatch: The current image has fewer channels"
@@ -226,7 +220,8 @@ def get_roi_split_view(re, pixels, z_start, z_end, split_indexes,
 
     # now assemble the roi split-view canvas
     font = image_utils.get_font(fontsize)
-    text_height = font.getsize("Textq")[1]
+    box = font.getbbox("Textq")
+    text_height = box[3] - box[1]
     top_spacer = 0
     if show_top_labels:
         if merged_names:
@@ -249,7 +244,8 @@ def get_roi_split_view(re, pixels, z_start, z_end, split_indexes,
     draw = ImageDraw.Draw(canvas)
     for i, index in enumerate(split_indexes):
         label = channel_names.get(index, index)
-        indent = (panel_width - (font.getsize(label)[0])) // 2
+        box = font.getbbox(label)
+        indent = (panel_width - (box[2] - box[0])) // 2
         # text is coloured if channel is not coloured AND in the merged image
         rgb = (0, 0, 0)
         if index in merged_colours:
@@ -277,12 +273,14 @@ def get_roi_split_view(re, pixels, z_start, z_end, split_indexes,
                     name = channel_names[index]
                 else:
                     name = str(index)
-                comb_text_width = font.getsize(name)[0]
+                box = font.getbbox(name)
+                comb_text_width = box[2] - box[0]
                 inset = int((panel_width - comb_text_width) / 2)
                 draw.text((px + inset, text_y), name, font=font, fill=rgb)
                 text_y = text_y - text_height
         else:
-            comb_text_width = font.getsize("Merged")[0]
+            box = font.getbbox("Merged")
+            comb_text_width = box[2] - box[0]
             inset = int((panel_width - comb_text_width) / 2)
             draw.text((px + inset, text_y), "Merged", font=font,
                       fill=(0, 0, 0))
@@ -306,7 +304,9 @@ def draw_rectangle(image, roi_x, roi_y, roi_x2, roi_y2, colour, stroke=1):
 def get_rectangle(roi_service, image_id, roi_label):
     """
     Returns (x, y, width, height, zMin, zMax, tMin, tMax) of the first
-    rectange in the image that has @roi_label as text
+    rectange in the image that has roi_label as text.
+
+    :return: First rectangle.
     """
 
     result = roi_service.findByImage(image_id, None)
@@ -320,7 +320,7 @@ def get_rectangle(roi_service, image_id, roi_label):
         roi_count += 1
         # go through all the shapes of the ROI
         for shape in roi.copyShapes():
-            if type(shape) == omero.model.RectangleI:
+            if isinstance(shape, omero.model.RectangleI):
                 the_t = unwrap(shape.getTheT())
                 the_z = unwrap(shape.getTheZ())
                 t = 0
@@ -382,19 +382,19 @@ def get_split_view(conn, image_ids, pixel_ids, split_indexes, channel_names,
 
     The figure is returned as a PIL 'Image'
 
-    @ session           session for server access
-    @ pixel_ids         a list of the Ids for the pixels we want to display
-    @ split_indexes     a list of the channel indexes to display. Same
-                        channels for each image/row
-    @ channel_names     the Map of index:names for all channels
-    @ colour_channels   the colour to make each column/ channel
-    @ merged_indexes    list or set of channels in the merged image
-    @ merged_colours    index: colour dictionary of channels in the merged
-                        image
-    @ width             the size in pixels to show each panel
-    @ height            the size in pixels to show each panel
-    @ spacer            the gap between images and around the figure. Doubled
-                        between rows.
+    :param session: session for server access
+    :param pixel_ids: a list of the Ids for the pixels we want to display
+    :param split_indexes: a list of the channel indexes to display.\
+                          Same channels for each image/row
+    :param channel_names: the Map of index:names for all channels
+    :param colour_channels: the colour to make each column/ channel
+    :param merged_indexes: list or set of channels in the merged image
+    :param merged_colours: index: colour dictionary of channels in the\
+                            merged image
+    :param width: the size in pixels to show each panel
+    :param height: the size in pixels to show each panel
+    :param spacer: the gap between images and around the figure.\
+                     Doubled between rows.
     """
 
     roi_service = conn.getRoiService()
@@ -431,7 +431,8 @@ def get_split_view(conn, image_ids, pixel_ids, split_indexes, channel_names,
     elif width > 200:
         fontsize = 16
     font = image_utils.get_font(fontsize)
-    text_height = font.getsize("Textq")[1]
+    box = font.getbbox("Textq")
+    text_height = box[3] - box[1]
     max_count = 0
     for row in image_labels:
         max_count = max(max_count, len(row))
@@ -557,15 +558,14 @@ def roi_figure(conn, command_args):
     Then calls a method to make the figure, and finally uploads and attaches
     this to the primary image.
 
-    @param: session         The OMERO session
-    @param: command_args    Map of String:Object parameters for the script.
+    :param: session         The OMERO session
+    :param: command_args    Map of String:Object parameters for the script.
                             Objects are not rtypes, since getValue() was
                             called when the map was processed below.
                             But, list and map objects may contain rtypes (need
                             to call getValue())
 
-    @return:                the id of the originalFileLink child. (ID object,
-                            not value)
+    :return: the id of the originalFileLink child. (ID object, not value)
     """
 
     log("ROI figure created by OMERO on %s" % date.today())
@@ -661,7 +661,7 @@ def roi_figure(conn, command_args):
         try:
             height = int(h)
         except ValueError:
-            log("Invalid height: %s Using default value" % (str(h), size_y))
+            log("Invalid height: %s Using default value: %d" % (str(h), size_y))  # noqa
 
     log("Image dimensions for all panels (pixels): width: %d  height: %d"
         % (width, height))
