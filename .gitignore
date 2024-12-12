@@ -3,6 +3,3 @@
 *.pyc
 .gitignore
 *.DS_Store*
-.idea
-.git
-.github
